@@ -99,6 +99,20 @@ def test_missing_label_raises():
         audit_split(_clean_split(), known=["k1", "nope"], unknown=["u1"])
 
 
+def test_known_unknown_overlap_raises():
+    # A label in both lists would yield MI(x, x) = H(x) -> a spurious leak.
+    with pytest.raises(ValueError, match="both"):
+        audit_split(_clean_split(), known=["k1", "u1"], unknown=["u1", "u2"])
+
+
+def test_degenerate_label_warns():
+    s = _clean_split()
+    s["k1"] = np.zeros_like(s["k1"])  # no positives
+    with pytest.warns(UserWarning, match="single value"):
+        audit_split(s, known=["k1", "k2"], unknown=["u1"],
+                    n_boot=50, n_perm=50)
+
+
 def test_report_serialization_roundtrip():
     rep = audit_split(_clean_split(), known=["k1"], unknown=["u1"],
                       n_boot=100, n_perm=100, seed=0)

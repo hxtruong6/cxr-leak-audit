@@ -34,8 +34,8 @@ def miller_madow_mi(a: np.ndarray, b: np.ndarray) -> float:
     Example:
         >>> import numpy as np
         >>> a = np.array([0, 0, 1, 1])
-        >>> float(round(miller_madow_mi(a, a), 4))  # identical -> H - 1/(2n)
-        0.5683
+        >>> float(round(miller_madow_mi(a, a), 4))  # identical -> ln2 - 1/(2n)
+        0.5681
     """
     a = np.asarray(a)
     b = np.asarray(b)

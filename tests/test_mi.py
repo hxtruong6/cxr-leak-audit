@@ -49,6 +49,13 @@ def test_known_contingency_value():
     assert miller_madow_mi(a, b) == pytest.approx(expected, abs=1e-9)
 
 
+def test_documented_example_value():
+    # Locks the value shown in the miller_madow_mi docstring (n=4, identical
+    # balanced binary -> ln2 - 1/(2*4) = 0.5681).
+    a = np.array([0, 0, 1, 1])
+    assert round(float(miller_madow_mi(a, a)), 4) == 0.5681
+
+
 def test_length_mismatch_raises():
     with pytest.raises(ValueError):
         miller_madow_mi(np.array([0, 1]), np.array([0, 1, 0]))

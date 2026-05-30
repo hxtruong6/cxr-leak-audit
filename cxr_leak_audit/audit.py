@@ -13,6 +13,7 @@ preserved; the permutation null shuffles one vector to break it.
 """
 from __future__ import annotations
 
+import warnings
 from dataclasses import dataclass, field
 from typing import Sequence, cast
 
@@ -257,6 +258,22 @@ def audit_split(
     missing = [c for c in list(known) + list(unknown) if c not in labels]
     if missing:
         raise ValueError(f"labels missing for: {missing}")
+    overlap = sorted(set(known) & set(unknown))
+    if overlap:
+        raise ValueError(
+            f"label(s) appear in both `known` and `unknown`: {overlap}; a class "
+            "cannot be simultaneously known and held-out (this would report a "
+            "spurious self-information leak)"
+        )
+    degenerate = [c for c in list(known) + list(unknown)
+                  if len(np.unique(labels[c])) < 2]
+    if degenerate:
+        warnings.warn(
+            f"label(s) take a single value (no positives or no negatives): "
+            f"{degenerate}. Their mutual information is 0 by construction and "
+            "they cannot leak or be leaked --- check these are the right columns.",
+            stacklevel=2,
+        )
 
     pairs = pairwise_mi(labels, known, unknown)
     worst = pairs[0]
