@@ -1,0 +1,29 @@
+cff-version: 1.2.0
+title: "cxr-leak-audit: Information-theoretic leakage audit for multi-label open-set splits"
+message: "If you use this software, please cite it as below."
+type: software
+authors:
+  - family-names: "Hoang"
+    given-names: "Truong"
+    email: "hxtruong6ac@gmail.com"
+repository-code: "https://github.com/hxtruong6/cxr-leak-audit"
+license: MIT
+version: "0.1.0"
+date-released: "2026-05-31"
+keywords:
+  - "open-set-recognition"
+  - "data-leakage"
+  - "mutual-information"
+  - "benchmark"
+  - "chest-x-ray"
+  - "multi-label"
+  - "audit"
+abstract: >-
+  A small, framework-agnostic Python library and CLI that audits a multi-label
+  open-set recognition split for known-versus-unknown co-occurrence leakage.
+  For every (unknown, known) label pair it computes the Miller-Madow
+  bias-corrected mutual information in nats, with a paired bootstrap confidence
+  interval and a permutation null on the worst pair, and returns a PASS/FAIL
+  verdict against a leakage threshold (default 0.05 nats). A passing split
+  bounds the harvestable co-occurrence signal before any model is trained, so a
+  reported open-set ranking reflects detection rather than contamination.
