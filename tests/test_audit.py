@@ -113,6 +113,25 @@ def test_degenerate_label_warns():
                     n_boot=50, n_perm=50)
 
 
+def test_threshold_always_in_sweep_and_consistent():
+    # R3-2: a non-default threshold must appear in the sweep, and the sweep
+    # count at the operative threshold must equal n_violations.
+    rep = audit_split(_leaky_split(), known=["k1", "k2"], unknown=["u1", "u2"],
+                      threshold=0.04, n_boot=50, n_perm=50)
+    assert 0.04 in rep.sweep
+    assert rep.sweep[0.04] == rep.n_violations
+
+
+def test_ci_level_propagates_to_report_and_render():
+    # R3-3: the rendered CI percentage tracks the `ci` argument.
+    rep = audit_split(_clean_split(), known=["k1"], unknown=["u1"],
+                      ci=0.90, n_boot=100, n_perm=50)
+    assert rep.ci_level == 0.90
+    assert "90% CI" in rep.summary()
+    assert rep.to_dict()["worst_pair_ci_level"] == 0.90
+    assert "per-pair p" in rep.summary()
+
+
 def test_report_serialization_roundtrip():
     rep = audit_split(_clean_split(), known=["k1"], unknown=["u1"],
                       n_boot=100, n_perm=100, seed=0)

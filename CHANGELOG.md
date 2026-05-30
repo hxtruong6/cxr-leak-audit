@@ -6,6 +6,29 @@ this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [0.1.2] — 2026-05-31
+
+### Fixed
+
+- The operative `threshold` is now always included in the report's
+  `threshold_sweep`, so `sweep[threshold] == n_violations` always holds.
+  Previously a non-default threshold (e.g. `0.04`) was absent from the sweep
+  table, making the report look internally inconsistent.
+
+### Added
+
+- `audit_split(..., ci=...)` and `cxr-leak-audit --ci` expose the worst-pair
+  bootstrap confidence level (default `0.95`); reports render the actual level
+  instead of a hardcoded "95%". `AuditReport.ci_level` and
+  `worst_pair_ci_level` in `to_dict()` record it.
+
+### Changed
+
+- Reports now label the worst-pair p-value as **per-pair** and the docstring
+  documents that the worst-pair CI/p are post-selection and not family-wise
+  corrected — the `threshold` verdict (which scans every pair) is the overall
+  call. No statistic changed.
+
 ## [0.1.1] — 2026-05-31
 
 ### Fixed

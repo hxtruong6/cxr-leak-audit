@@ -41,6 +41,8 @@ def build_parser() -> argparse.ArgumentParser:
                    help="Bootstrap resamples for the worst-pair CI (default: 1000).")
     p.add_argument("--permutations", type=int, default=1000,
                    help="Permutations for the worst-pair p-value (default: 1000).")
+    p.add_argument("--ci", type=float, default=0.95,
+                   help="Confidence level for the worst-pair CI (default: 0.95).")
     p.add_argument("--seed", type=int, default=0, help="RNG seed (default: 0).")
     p.add_argument("--id-col", default=None,
                    help="Name of a non-label id column to ignore (e.g. image_id).")
@@ -81,7 +83,7 @@ def main(argv: list[str] | None = None) -> int:
     report = audit_split(
         labels, known=args.known, unknown=args.unknown,
         threshold=args.threshold, n_boot=args.bootstrap,
-        n_perm=args.permutations, seed=args.seed,
+        n_perm=args.permutations, ci=args.ci, seed=args.seed,
     )
     print(report.summary())
     if args.json:

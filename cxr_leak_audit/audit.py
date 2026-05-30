@@ -166,6 +166,12 @@ class AuditReport:
     sweep: dict[float, int] = field(default_factory=dict)
     pairs: list[dict] = field(default_factory=list)
     units: str = "nats"
+    ci_level: float = 0.95
+
+    @property
+    def _ci_pct(self) -> str:
+        pct = self.ci_level * 100
+        return f"{pct:.0f}" if pct == round(pct) else f"{pct:g}"
 
     def to_dict(self) -> dict:
         """Return a JSON-serializable dict of the report."""
@@ -177,6 +183,7 @@ class AuditReport:
             "max_mi": self.max_mi,
             "worst_pair": {"unknown": self.worst_unknown, "known": self.worst_known},
             "worst_pair_ci": [self.ci_low, self.ci_high],
+            "worst_pair_ci_level": self.ci_level,
             "worst_pair_pvalue": self.pvalue,
             "n_violations": self.n_violations,
             "threshold_sweep": self.sweep,
@@ -189,7 +196,8 @@ class AuditReport:
         return (
             f"[{verdict}] max I_MM = {self.max_mi:.4f} {self.units} "
             f"({self.worst_unknown} <-> {self.worst_known}, "
-            f"95% CI [{self.ci_low:.4f}, {self.ci_high:.4f}], p={self.pvalue:.3f}); "
+            f"{self._ci_pct}% CI [{self.ci_low:.4f}, {self.ci_high:.4f}], "
+            f"per-pair p={self.pvalue:.3f}); "
             f"{self.n_violations}/{self.n_pairs} pairs exceed {self.threshold} {self.units}"
         )
 
@@ -202,8 +210,8 @@ class AuditReport:
             f"- Pairs audited: {self.n_pairs}",
             f"- Max MI: **{self.max_mi:.4f} {self.units}** "
             f"({self.worst_unknown} <-> {self.worst_known})",
-            f"- Worst-pair 95% CI: [{self.ci_low:.4f}, {self.ci_high:.4f}]; "
-            f"permutation p = {self.pvalue:.3f}",
+            f"- Worst-pair {self._ci_pct}% CI: [{self.ci_low:.4f}, {self.ci_high:.4f}]; "
+            f"per-pair permutation p = {self.pvalue:.3f}",
             f"- Violations (MI > {self.threshold}): {self.n_violations}",
             "",
             "| Threshold | Violating pairs |",
@@ -226,6 +234,7 @@ def audit_split(
     threshold: float = 0.05,
     n_boot: int = 1000,
     n_perm: int = 1000,
+    ci: float = 0.95,
     seed: int = 0,
     sweep_thresholds: Sequence[float] = (0.03, 0.05, 0.07),
 ) -> AuditReport:
@@ -243,15 +252,26 @@ def audit_split(
             exceeds it.
         n_boot: Bootstrap resamples for the worst-pair CI.
         n_perm: Permutations for the worst-pair p-value.
+        ci: Central confidence level for the worst-pair bootstrap CI.
         seed: RNG seed for reproducibility.
-        sweep_thresholds: Extra thresholds for the violation-count sweep.
+        sweep_thresholds: Extra thresholds for the violation-count sweep;
+            ``threshold`` is always included so the report is self-consistent.
 
     Returns:
         An :class:`AuditReport`.
 
     Raises:
-        ValueError: If ``known`` or ``unknown`` is empty, or a name is
-            missing from ``labels``.
+        ValueError: If ``known`` or ``unknown`` is empty, overlap, or a name
+            is missing from ``labels``.
+
+    Note:
+        The CI and p-value describe the **single worst pair**, selected as the
+        maximum over all pairs. They are *not* family-wise corrected: the
+        per-pair p-value answers "is this pair's co-occurrence significant on
+        its own", not "is the largest of all pairs surprising under global
+        independence". With many pairs the worst per-pair p is optimistic;
+        read it as a diagnostic for the named pair, and rely on the
+        ``threshold`` verdict (which scans every pair) for the overall call.
     """
     if not known or not unknown:
         raise ValueError("both `known` and `unknown` must be non-empty")
@@ -278,9 +298,9 @@ def audit_split(
     pairs = pairwise_mi(labels, known, unknown)
     worst = pairs[0]
     a, b = labels[worst["unknown"]], labels[worst["known"]]
-    ci_low, ci_high = bootstrap_ci(a, b, n_boot=n_boot, seed=seed)
+    ci_low, ci_high = bootstrap_ci(a, b, n_boot=n_boot, ci=ci, seed=seed)
     pval = permutation_pvalue(a, b, n_perm=n_perm, seed=seed)
-    sweep = threshold_sweep(pairs, sweep_thresholds)
+    sweep = threshold_sweep(pairs, sorted(set(sweep_thresholds) | {threshold}))
     n_viol = int(sum(1 for p in pairs if p["mi"] > threshold))
 
     return AuditReport(
@@ -292,6 +312,7 @@ def audit_split(
         worst_known=str(worst["known"]),
         ci_low=ci_low,
         ci_high=ci_high,
+        ci_level=ci,
         pvalue=pval,
         n_violations=n_viol,
         sweep=sweep,

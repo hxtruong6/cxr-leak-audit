@@ -122,6 +122,11 @@ I_MM(a, b) = I_plugin(a, b) − (k_a − 1)(k_b − 1) / (2n)
 - **Pairwise**: a tractable, interpretable operationalization of leakage. It
   does **not** detect higher-order (multi-label coalition) synergy — a known
   limitation; treat a pass as necessary, not sufficient.
+- **Worst-pair CI/p are per-pair, not family-wise.** The bootstrap CI and
+  permutation p-value describe the single maximum pair, selected post hoc;
+  they are not corrected for having scanned every pair. Use them as a
+  diagnostic for the named pair, and rely on the `threshold` verdict (which
+  scans all pairs) for the overall PASS/FAIL call.
 
 ## Reproducibility
 
